@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 from app import app
+from fastapi import Response
+from fastapi.responses import JSONResponse
 
 client = TestClient(app)
 
@@ -19,7 +21,7 @@ def test_tasks():
 
 def test_create_tasks():
     response = client.post("/tasks", json={"title": "Test Task"})
-    assert response.status_code == 200
+    assert response.status_code == 201
     
 
 def test_read_tasks():
@@ -48,9 +50,7 @@ def test_delete_tasks():
     response = client.get("/tasks")
     task_id = response.json()[0]["id"]
     response = client.delete(f"/tasks/{task_id}")
-    assert response.status_code == 200
-    assert response.json() == {"detail": "Task deleted"}
-
+    assert response.status_code == 204
 
 def test_not_found_delete():
     response = client.delete("/tasks/nonexistent")
