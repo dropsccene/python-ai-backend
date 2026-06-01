@@ -1,9 +1,16 @@
 from fastapi.testclient import TestClient
-from app import app
+import app
 from fastapi import Response
 from fastapi.responses import JSONResponse
+import pytest
 
-client = TestClient(app)
+client = TestClient(app.app)
+
+@pytest.fixture(autouse=True)
+def setup():
+    app.tasks_db.clear()
+    with open("tasks.json", "w") as f:
+        f.write("[]")
 
 def test_read():
     response = client.get("/health")
@@ -36,19 +43,22 @@ def test_not_tasks_found():
     assert response.status_code == 404
 
 def test_update_tasks():
-    response = client.get(f"/tasks")
-    task_id = response.json()[0]["id"]
+    # 首先创建一个任务
+    create_resp = client.post("/tasks",json={"title":"待更新任务"})
+    task_id = create_resp.json()["id"]
+    # 然后更新这个任务
     response = client.put(f"/tasks/{task_id}", json={"title": "更新后的任务", "done": True})
+    # 断言
     assert response.status_code == 200
     assert response.json()["done"] == True
 
 def test_not_found_update():
-    response = client.put("/tasks/{task_id}/nonexistent",json={"title": "更新后的任务", "done": True})
+    response = client.put("/tasks/nonexistent",json={"title": "更新后的任务", "done": True})
     assert response.status_code == 404
 
 def test_delete_tasks():
-    response = client.get("/tasks")
-    task_id = response.json()[0]["id"]
+    create_resp = client.post("/tasks",json={"title":"待删除任务"})
+    task_id = create_resp.json()["id"]
     response = client.delete(f"/tasks/{task_id}")
     assert response.status_code == 204
 
