@@ -1,6 +1,6 @@
 import sys
 # 函数定义时给参数一个默认值，调用时可以不传
-def add_item(item,items=none):
+def add_item(item,items = None):
     if items is None:
         items = []
     else:

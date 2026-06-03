@@ -30,7 +30,4 @@ print(r.status_code)
 print(r.json())
 
 r = httpx.delete(f"http://localhost:8000/tasks/{task_id}")
-r.status_code
-r.json()
 print(r.status_code)
-print(r.json())
