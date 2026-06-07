@@ -3,9 +3,9 @@ from sqlalchemy import create_engine
 # 从 sqlalchemy.orm 导入 sessionmaker 和 declarative_base
 from sqlalchemy.orm import sessionmaker,declarative_base
 # 数据库地址 = sqlite 文件 ./blog.db
-sqlite_db = "sqlite:///./blog.db"
+DATABASE_URL = "postgresql:///blogdb"
 # 创建引擎 engine （注意 connect_args 参数）
-engine = create_engine(sqlite_db,connect_args={"check_same_thread":False})
+engine = create_engine(DATABASE_URL)
 # 创建模型基类 Base
 Base = declarative_base()
 # 创建会话工厂 SessionLocal （autocommit=False, autoflush=False, 绑定 engine）

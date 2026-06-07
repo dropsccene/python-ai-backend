@@ -7,10 +7,35 @@ import json
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
-from models import User,Article
-from schemas import UserCreate,ArticleCreate
+from models import User,Article,Tag
+from schemas import UserCreate,ArticleCreate,TagCreate
 
 app = FastAPI()
+
+@app.post("/tags")
+def create_tag(tag_data : TagCreate,db : Session = Depends(get_db)):
+    tag = Tag(**tag_data.model_dump())
+    db.add(tag)
+    db.commit()
+    db.refresh(tag)
+    return tag
+
+@app.get("/tags")
+def get_tags(db : Session = Depends(get_db)):
+    tags = db.query(Tag).all()
+    return tags
+
+@app.post("/articles/{article_id}/tags/{tag_id}")
+def add_tag_to_article(article_id:int,tag_id:int,db:Session = Depends(get_db)):
+    article = db.query(Article).filter(Article.id == article_id).first()
+    if article is None:
+        raise HTTPException(status_code=404, detail="Article not found")
+    tag = db.query(Tag).filter(Tag.id == tag_id).first()
+    if tag is None:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    article.tags.append(tag)
+    db.commit()
+    return {"OK":True}
 
 @app.get("/users")
 def get_users(db : Session = Depends(get_db)):
@@ -63,7 +88,7 @@ def get_articles(db : Session = Depends(get_db)):
 def get_article(article_id:int,db:Session = Depends(get_db)):
 	article = db.query(Article).filter(Article.id == article_id).first()
 	if article is None:
-		raise HTTPException(status = 404,detail="Article not found")
+		raise HTTPException(status_code=404, detail="Article not found")
 	return article
 
 @app.post("/users/{user_id:int}/articles")
