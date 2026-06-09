@@ -38,3 +38,10 @@ def collect_items(name:str,*args,**kwargs):
 		print("no tags")
 	else:
 		print(kwargs.get('tags'))
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
