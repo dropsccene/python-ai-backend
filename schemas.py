@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class UserCreate(BaseModel):
 	username:str
 	email:str
+	password:str
 # 创建UserResponse 模型，包含id-整数类型、username、email-字符串类型
 class UserResponse(BaseModel):
 	id : int

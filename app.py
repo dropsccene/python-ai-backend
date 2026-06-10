@@ -9,8 +9,61 @@ from sqlalchemy import text
 from database import get_db
 from models import User,Article,Tag
 from schemas import UserCreate,ArticleCreate,TagCreate
+import bcrypt
+from schemas import UserResponse,ArticleResponse,TagResponse
+import jwt
+import datetime
+import secrets
+from fastapi.security import OAuth2PasswordBearer
+
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 app = FastAPI()
+
+SECRET = secrets.token_hex(32)
+
+@app.post("/register",response_model = UserResponse)
+def create_register(user:UserCreate,db:Session = Depends(get_db)):
+    if db.query(User).filter(User.username == user.username).first():
+        raise HTTPException(status_code=400, detail="Username already exists")
+    pwd_hash = bcrypt.hashpw(user.password.encode(),bcrypt.gensalt())
+    db_user = User(username = user.username,email = user.email,password = pwd_hash.decode())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/login")
+def login(form:UserCreate,db:Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.username == form.username).first()
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    if not bcrypt.checkpw(form.password.encode(),db_user.password.encode()):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = jwt.encode({"username":db_user.username,"sub":str(db_user.id),"exp":datetime.datetime.utcnow() + datetime.timedelta(hours=2)},SECRET,algorithm="HS256")
+    return {"access_token":token,"token_type":"bearer","expires_in":7200}
+
+def get_current_user(token:str = Depends(oauth2_scheme),db:Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token,SECRET,algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+@app.get("/users",response_model = list[UserResponse])
+def get_users(db:Session = Depends(get_db),current_user:User = Depends(get_current_user)):
+    users = db.query(User).all()
+    return users
+
+@app.get("/users/me",response_model = UserResponse)
+def get_me(current_user:User = Depends(get_current_user)):
+    return current_user
 
 @app.post("/tags")
 def create_tag(tag_data : TagCreate,db : Session = Depends(get_db)):
@@ -38,9 +91,9 @@ def add_tag_to_article(article_id:int,tag_id:int,db:Session = Depends(get_db)):
     return {"OK":True}
 
 @app.get("/users")
-def get_users(db : Session = Depends(get_db)):
-	user = db.query(User).all()
-	return user
+def get_users(db : Session = Depends(get_db),current_user:User = Depends(get_current_user)):
+    user = db.query(User).all()
+    return user
 
 @app.post("/users")
 def create_user(user_data : UserCreate,db : Session = Depends(get_db)):
@@ -81,23 +134,23 @@ def delete_user(user_id:int,db:Session = Depends(get_db)):
 
 @app.get("/articles")
 def get_articles(db : Session = Depends(get_db)):
-	articles = db.query(Article).all()
-	return articles
+    articles = db.query(Article).all()
+    return articles
 
 @app.get("/articles/{article_id}")
 def get_article(article_id:int,db:Session = Depends(get_db)):
-	article = db.query(Article).filter(Article.id == article_id).first()
-	if article is None:
-		raise HTTPException(status_code=404, detail="Article not found")
-	return article
+    article = db.query(Article).filter(Article.id == article_id).first()
+    if article is None:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return article
 
 @app.post("/users/{user_id:int}/articles")
 def create_articles(user_id:int,user_data:ArticleCreate,db :Session = Depends(get_db)):
-	article = Article(**user_data.model_dump(),user_id = user_id)
-	db.add(article)
-	db.commit()
-	db.refresh(article)
-	return article
+    article = Article(**user_data.model_dump(),user_id = user_id)
+    db.add(article)
+    db.commit()
+    db.refresh(article)
+    return article
 
 @app.get("/test-db")
 def test_db(db :Session = Depends(get_db)):

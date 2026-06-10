@@ -17,6 +17,7 @@ class User(Base):
     articles = relationship("Article",back_populates = "author")
     email = Column(String,unique=True,nullable=False)
     avatar_url = Column(String,nullable=True)
+    password = Column(String,nullable=False)
 
 class Article(Base):
     __tablename__ = "articles"
