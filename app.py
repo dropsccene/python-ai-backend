@@ -25,6 +25,21 @@ app = FastAPI()
 
 SECRET = secrets.token_hex(32)
 
+
+@app.get("/users/{id:int}")
+def get_user(id:int,db:Session= Depends(get_db)):
+    user = db.query(User).filter(User.id == id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserResponse.model_validate(user).model_dump()
+
+@app.get("/articles/{id:int}")
+def get_article(id:int,db:Session = Depends(get_db)):
+    article = db.query(Article).filter(Article.id == id).first()
+    if article is None:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return ArticleResponse.model_validate(article).model_dump()
+
 @app.post("/register",response_model = UserResponse)
 def create_register(user:UserCreate,db:Session = Depends(get_db)):
     if db.query(User).filter(User.username == user.username).first():

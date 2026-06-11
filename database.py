@@ -1,9 +1,10 @@
 # 从 sqlalchemy 导入 create_engine
 from sqlalchemy import create_engine
+import os
 # 从 sqlalchemy.orm 导入 sessionmaker 和 declarative_base
 from sqlalchemy.orm import sessionmaker,declarative_base
 # 数据库地址 = sqlite 文件 ./blog.db
-DATABASE_URL = "postgresql:///blogdb"
+DATABASE_URL = os.getenv("DATABASE_URL","sqlite:///./blog.db")
 # 创建引擎 engine （注意 connect_args 参数）
 engine = create_engine(DATABASE_URL)
 # 创建模型基类 Base
