@@ -15,6 +15,9 @@ import jwt
 import datetime
 import secrets
 from fastapi.security import OAuth2PasswordBearer
+import os
+
+
 
 
 
@@ -23,7 +26,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 app = FastAPI()
 
-SECRET = secrets.token_hex(32)
+SECRET = os.getenv("SECRET",secrets.token_hex(32))
 
 
 @app.get("/users/{id:int}")

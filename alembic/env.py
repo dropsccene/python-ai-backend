@@ -60,7 +60,7 @@ def run_migrations_online() -> None:
 
     """
     from sqlalchemy import create_engine
-    connectable = create_engine(os.getenv("DATABASE_URL"))
+    connectable = create_engine(os.getenv("DATABASE_URL","sqlite:///./blog.db"))
 
     with connectable.connect() as connection:
         context.configure(
